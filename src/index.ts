@@ -31,8 +31,12 @@ const fetchAndSaveStationInfo = async () => {
         fs.writeFileSync(stationInfoFile, JSON.stringify(stationInfoData, null, 2));
         console.log("fetched data!")
     }
-    
 } 
+
+// Schedule a fetch to run every 24 hours
+cron.schedule('0 0 * * *', () => {
+    fetchAndSaveStationInfo();
+});
 
 app.get('/', (req: Request, res: Response) => {
     try {
