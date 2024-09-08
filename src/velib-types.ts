@@ -8,39 +8,43 @@ interface gbfs {
     }
 }
 
+interface SingleStationStatus {
+        station_id: number,
+        num_bikes_available: number,
+        numBikesAvailable: number,
+        num_bikes_available_types: [{mechanical: number}, {ebike: number}],
+        num_docks_available: number,
+        numDocksAvailable: number,
+        is_installed: number,
+        is_returning: number,
+        is_renting: number,
+        last_reported: number,
+        stationCode: string
+}
+
 interface StationsStatus {
     lastUpdatedOther: number
     ttl: number
     data: {
-        stations: {
-            station_id: number,
-            num_bikes_available: number,
-            numBikesAvailable: number,
-            num_bikes_available_types: [{mechanical: number}, {ebike: number}],
-            num_docks_available: number,
-            numDocksAvailable: number,
-            is_installed: number,
-            is_returning: number,
-            is_renting: number,
-            last_reported: number,
-            stationCode: string
-        }[]
+        stations: SingleStationStatus[]
     }
+}
+
+interface SingleStationInfo {
+    station_id: number,
+    stationCode: string,
+    name: string,
+    lat: number,
+    lon: number,
+    capacity: number,
+    rental_methods?: string[]
 }
 
 interface StationsInformation {
     lastUpdatedOther: number
     ttl: number
     data: {
-        stations: {
-            station_id: number,
-            stationCode: string,
-            name: string,
-            lat: number,
-            lon: number,
-            capacity: number,
-            rental_methods?: string[]
-        }[]
+        stations: SingleStationInfo[]
     }
 }
 
@@ -87,4 +91,4 @@ interface StationBikes {
 
 type gpsCoord = {latitude: number, longitude: number}
 
-export type {StationsStatus, StationsInformation, StationBikes, gbfs, gpsCoord}
+export type {SingleStationStatus, StationsStatus, SingleStationInfo, StationsInformation, StationBikes, gbfs, gpsCoord}

@@ -1,6 +1,6 @@
 import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
-import { gbfs, StationsInformation } from './velib-types';
+import { gbfs, StationsInformation, StationsStatus, SingleStationInfo } from './velib-types';
 import fs from 'fs'
 import tls from 'tls'
 import path from 'path'
@@ -24,14 +24,32 @@ const getOpenDataUrl = async (type: string) => {
 }
 
 const fetchAndSaveStationInfo = async () => {
-    const url = await getOpenDataUrl("station_information")
-    if (url) {
-        const stationInfoReq = await fetch(url)
-        const stationInfoData : StationsInformation = await stationInfoReq.json()
-        fs.writeFileSync(stationInfoFile, JSON.stringify(stationInfoData, null, 2));
-        console.log("fetched data!")
-    }
+    const url = await getOpenDataUrl("station_information") || "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_information.json"
+    const stationInfoReq = await fetch(url)
+    const stationInfoData : StationsInformation = await stationInfoReq.json()
+
+    const stationInfoMap: Record<SingleStationInfo["stationCode"], SingleStationInfo> = {}
+    stationInfoData.data.stations.forEach((station) => {
+        stationInfoMap[station.stationCode] = station
+    })
+    fs.writeFileSync(stationInfoFile, JSON.stringify(stationInfoMap, null, 2));
+    console.log("fetched data!")
+
 } 
+
+const fetchAndMergeStationStatus = async () => {
+    const url = await getOpenDataUrl("station_status") || "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json"
+    const stationStatusReq = await fetch(url)
+    const stationStatusData : StationsStatus = await stationStatusReq.json()
+    
+    const stationInfoMapFile = fs.readFileSync(stationInfoFile, 'utf-8')
+    const stationInfoMap: Record<SingleStationInfo["stationCode"], SingleStationInfo> = JSON.parse(stationInfoMapFile)
+    const mergedStationsList = stationStatusData.data.stations.map(station => {
+        const match = stationInfoMap[station.stationCode as string]
+        return match && {...station, ...match}
+    })
+    return mergedStationsList
+}
 
 // Schedule a fetch to run every 24 hours
 cron.schedule('0 0 * * *', () => {
@@ -39,12 +57,9 @@ cron.schedule('0 0 * * *', () => {
 });
 
 app.get('/', (req: Request, res: Response) => {
-    try {
-        const data = fs.readFileSync(stationInfoFile, 'utf-8');
-        res.json(JSON.parse(data));
-    } catch (error) {
-        res.status(500).send('Error reading data file');
-    }
+    fetchAndMergeStationStatus().then(mergedStationsList => {
+        res.json(mergedStationsList)
+    })
 });
 
 app.listen(port, () => {
