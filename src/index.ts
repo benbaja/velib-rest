@@ -1,10 +1,8 @@
 import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
-import { gbfs, StationsInformation, StationsStatus, SingleStationInfo } from './velib-types';
-import fs from 'fs'
+import * as geolib from 'geolib'
+import { StationStatus, StationInfo } from './velib-types';
 import tls from 'tls'
-import path from 'path'
-import cron from 'node-cron'
 
 tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 
@@ -14,51 +12,31 @@ dotenv.config();
 const app: Application = express();
 const port = process.env.PORT || 8000;
 
-const stationInfoFile = path.join(__dirname, 'station_info.json');
-
-const getOpenDataUrl = async (type: string) => {
-    const gbfsReq = await fetch("https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/gbfs.json")
-    const gbfsData : gbfs = await gbfsReq.json()
-    const gbfsFeeds = gbfsData.data.en.feeds
-    return gbfsFeeds.find(feed => feed.name == type)?.url
+const mapReqInit: RequestInit = {
+    method: "GET",
+    cache: "no-store",
+    mode: "cors",
+    credentials: "include",
+    headers: {
+        "Host": "www.velib-metropole.fr",
+        "accept": "*/*",
+        "content-type": "application/json",
+        "authorization": `Basic ${process.env.VELIB_API_TOKEN}`,
+        "user-agent": "Velib/1099 CFNetwork/1496.0.7 Darwin/23.5.0",
+        "accept-language": "fr-FR,fr;q=0.9",
+        "Connection": "keep-alive",
+        //"Accept-Encoding": "gzip"
+    }
 }
-
-const fetchAndSaveStationInfo = async () => {
-    const url = await getOpenDataUrl("station_information") || "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_information.json"
-    const stationInfoReq = await fetch(url)
-    const stationInfoData : StationsInformation = await stationInfoReq.json()
-
-    const stationInfoMap: Record<SingleStationInfo["stationCode"], SingleStationInfo> = {}
-    stationInfoData.data.stations.forEach((station) => {
-        stationInfoMap[station.stationCode] = station
-    })
-    fs.writeFileSync(stationInfoFile, JSON.stringify(stationInfoMap, null, 2));
-    console.log("fetched data!")
-
-} 
-
-const fetchAndMergeStationStatus = async () => {
-    const url = await getOpenDataUrl("station_status") || "https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json"
-    const stationStatusReq = await fetch(url)
-    const stationStatusData : StationsStatus = await stationStatusReq.json()
-    
-    const stationInfoMapFile = fs.readFileSync(stationInfoFile, 'utf-8')
-    const stationInfoMap: Record<SingleStationInfo["stationCode"], SingleStationInfo> = JSON.parse(stationInfoMapFile)
-    const mergedStationsList = stationStatusData.data.stations.map(station => {
-        const match = stationInfoMap[station.stationCode as string]
-        return match && {...station, ...match}
-    })
-    return mergedStationsList
-}
-
-// Schedule a fetch to run every 24 hours
-cron.schedule('0 0 * * *', () => {
-    fetchAndSaveStationInfo();
-});
 
 app.get('/', (req: Request, res: Response) => {
-    fetchAndMergeStationStatus().then(mergedStationsList => {
-        res.json(mergedStationsList)
+    fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', mapReqInit)
+    .then(resp => resp.json())
+    .then((velibData: StationStatus[]) => {
+        const filtByCoord = velibData.filter(station => {
+            return geolib.isPointWithinRadius(station.station.gps, {latitude: 48.82413881129852, longitude: 2.376952760541059}, 500)
+        })
+        res.json(filtByCoord)
     })
 });
 
