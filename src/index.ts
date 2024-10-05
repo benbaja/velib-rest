@@ -1,8 +1,15 @@
 import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
 import * as geolib from 'geolib'
-import { StationStatus, StationInfo } from './velib-types';
+import { StationStatus, StationInfo, gpsCoord } from './velib-types';
 import tls from 'tls'
+import cron from 'node-cron'
+import path from 'path'
+import fs from 'fs'
+import {mkdir} from 'fs/promises'
+import { Readable } from 'stream'
+import {finished} from 'stream/promises'
+import { ReadableStream } from 'stream/web'
 
 tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 
@@ -11,6 +18,23 @@ dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 8000;
+
+const fetchPBF = async () => {
+    const geofabrikRes = await fetch("https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf")
+    if (geofabrikRes.body) {
+        if (!fs.existsSync("./osmfiles")) await mkdir("./osmfiles")
+        const tempDest = path.resolve("./osmfiles", "ile-de-france-latest.osm.pbf.temp")
+        const dest = tempDest.slice(0, -5)
+        const fileStream = fs.createWriteStream(tempDest, { flags: 'wx' })
+        await finished(Readable.fromWeb(geofabrikRes.body as ReadableStream<any>).pipe(fileStream))
+        if (fs.existsSync(dest)) fs.unlinkSync(dest)
+        fs.renameSync(tempDest, dest)
+    }
+}
+
+cron.schedule('0 0 * * *', () => {
+    fetchPBF();
+});
 
 const mapReqInit: RequestInit = {
     method: "GET",
@@ -29,15 +53,20 @@ const mapReqInit: RequestInit = {
     }
 }
 
-app.get('/', (req: Request, res: Response) => {
-    fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', mapReqInit)
-    .then(resp => resp.json())
-    .then((velibData: StationStatus[]) => {
-        const filtByCoord = velibData.filter(station => {
-            return geolib.isPointWithinRadius(station.station.gps, {latitude: 48.82413881129852, longitude: 2.376952760541059}, 500)
-        })
-        res.json(filtByCoord)
+const fetchStationStatus = async (gpsCoord: gpsCoord, distance=500) => {
+    const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', mapReqInit)
+    const velibData = await velibRes.json() as any as StationStatus[]
+    return velibData.filter(station => {
+        return geolib.isPointWithinRadius(station.station.gps, gpsCoord, distance)
     })
+
+}
+
+app.get('/', (req: Request, res: Response) => {
+    fetchStationStatus({latitude: 48.82413881129852, longitude: 2.376952760541059}, 500).then((filtDic) => {
+        res.json(filtDic)
+    })
+    
 });
 
 app.listen(port, () => {
