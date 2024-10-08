@@ -1,6 +1,6 @@
 import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
-import * as geolib from 'geolib'
+import {isPointWithinRadius} from 'geolib'
 import { StationStatus, StationInfo, gpsCoord } from './velib-types';
 import tls from 'tls'
 import cron from 'node-cron'
@@ -57,7 +57,7 @@ const fetchStationStatus = async (gpsCoord: gpsCoord, distance=500) => {
     const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', mapReqInit)
     const velibData = await velibRes.json() as any as StationStatus[]
     return velibData.filter(station => {
-        return geolib.isPointWithinRadius(station.station.gps, gpsCoord, distance)
+        return isPointWithinRadius(station.station.gps, gpsCoord, distance)
     })
 
 }

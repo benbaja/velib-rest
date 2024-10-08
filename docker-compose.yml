@@ -7,11 +7,11 @@ services:
     # You have to add --build to the docker compose command to do so
     # build:
     #   context: ./
-    container_name: ors-app
+    #container_name: ors-app
     ports:
-      - "8080:8082" # Expose the ORS API on port 8080
+      - "19643:8082" # Expose the ORS API on port 19643
       - "9001:9001" # Expose additional port for monitoring (optional)
-    image: local/openrouteservice:latest
+    image: openrouteservice/openrouteservice:v8.1.3
     # Advanced option! If you different ids to 0:0 and 1000:1000, you have to rebuild the container with the build args UID,GID.
     # The user command is useful if you want easier bind mount access or better security.
     #user: "1000:1000" # Run "mkdir -p ors-docker/config ors-docker/elevation_cache ors-docker/files ors-docker/graphs ors-docker/logs && sudo chown -R 1000:1000 ors" before starting the container!
@@ -33,7 +33,7 @@ services:
       # Configure the memory settings for JAVA or pass additional opts
       # Fore more available ENV properties see Prepare CATALINA_OPTS and JAVA_OPTS
       # in https://github.com/GIScience/openrouteservice/blob/main/docker-entrypoint.sh
-      XMS: 0.5g # start RAM assigned to java
+      XMS: 512m # start RAM assigned to java
       XMX: 1g # max RAM assigned to java. Rule of Thumb: <PBF-size> * <profiles> * 2
       # Example: 1.5 GB pbf size, two profiles (car and foot-walking)
       # -> 0.3 * 1 * 2 = 0.6 Set xmx to be AT LEAST `-Xmx0.6g`
@@ -75,6 +75,10 @@ services:
     # Use an env_file with the ENV properties instead and define everything in there:
     # Values will be overwritten if set in the 'environment' section.
     #env_file: ors-config.env
+
+  entrypoint:
+    - wget -P /home/ors/files https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf
+    - /entrypoint.sh
 
     # ----------------- Healthcheck configuration ------------------- #
     # The healthcheck is disabled by default. Uncomment the following lines to enable it.
