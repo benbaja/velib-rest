@@ -75,11 +75,6 @@ services:
     # Use an env_file with the ENV properties instead and define everything in there:
     # Values will be overwritten if set in the 'environment' section.
     #env_file: ors-config.env
-
-  entrypoint:
-    - wget -P /home/ors/files https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf
-    - /entrypoint.sh
-
     # ----------------- Healthcheck configuration ------------------- #
     # The healthcheck is disabled by default. Uncomment the following lines to enable it.
     # The healthcheck allows you to monitor the status of the ORS application.

@@ -47,4 +47,12 @@ interface StationBikes extends StationStatus {
     bikes: BikeInfo[]
 }
 
-export type {StationInfo, BikeInfo, StationStatus, StationBikes, gpsCoord}
+interface VelibResParams {
+    startPos: gpsCoord
+    minRate?: number
+    maxLastRate?: number 
+    bikeType: string
+    maxWalkTime?: number
+}
+
+export type {StationInfo, BikeInfo, StationStatus, StationBikes, gpsCoord, VelibResParams}
