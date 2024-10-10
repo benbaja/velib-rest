@@ -45,8 +45,10 @@ app.get('/', (req: Request, res: Response) => {
         maxWalkTime: 15
     }
     const velibs = new VelibRes(params)
-    velibs.filterStations().then((stations: StationStatus[]) => {
-        res.json(stations)
+    velibs.fetchAllStations().then((stations: StationStatus[]) => {
+        const status : (number | undefined)[] = []
+        stations.forEach(station => status.push(station.nbEBikeOverflow))
+        res.json(status)
     })
     
 });

@@ -36,7 +36,7 @@ interface StationStatus {
     overflow: "yes" | "no"
     overflowActivation: "yes" | "no"
     maxBikeOverflow: number
-    nbEBikeOverflow?: number
+    nbEBikeOverflow: number
     densityLevel: number
     nbBikeBlockedToCollect: number
     nbBikeBlockedToFixInStation: number

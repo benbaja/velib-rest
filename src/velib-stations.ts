@@ -1,3 +1,4 @@
+import { FeatureCollection } from "geojson"
 import { BikeInfo, gpsCoord, StationStatus, VelibResParams } from "./velib-types"
 import {isPointWithinRadius} from 'geolib'
 
@@ -24,58 +25,110 @@ class Station {
     public mBikes: BikeInfo[]
     public eBikes: BikeInfo[]
     public capacity: number
-    public walkingTime: number | undefined
+    public walkingTime: Promise<number>
+    private startPos: gpsCoord
 
-    constructor(status: StationStatus) {
+    constructor(status: StationStatus, startPos: gpsCoord) {
         this.name = status.station.name
         this.code = status.station.code
         this.pos = status.station.gps
+        this.startPos = startPos
         this.mBikes = []
         this.eBikes = []
         this.capacity = status.nbDock + status.nbEDock
+        this.walkingTime = this.getWalkingTime()
     }
 
-    private fetchBikes () {
+    public async getWalkingTime() {
+        const searchParams = new URLSearchParams({
+            start: `${this.startPos.longitude},${this.startPos.latitude}`,
+            end: `${this.pos.longitude},${this.pos.latitude}`
+        }).toString()
+        const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
+        const osrData = await osrRes.json() as FeatureCollection
+        const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
+        return walkTime
+    }
+
+    public async fetchBikes() {
         const bikeReqInit = {
             ...reqInit,
             method: "POST",
             body: JSON.stringify({disponibility: "yes", stationName: this.name})
         }
-        fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit).then( data => {
-            console.log(data.status)
-            data.json().then(jsonResult => {
-                
-            })
-
-        })
+        const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
+        const bikeData = await bikeReq.json()
     }
 }
 
 class VelibRes {
     private filteredStations: Station[]
+    private rejectedStations: Station[]
     private parameters: VelibResParams
     private perimeter: number
     public allStations: Promise<StationStatus[]>
-    public suitableBikes: BikeInfo[]
 
     constructor(params: VelibResParams) {
         this.parameters = params
         this.perimeter = 500 // in meters
         this.filteredStations = []
-        this.suitableBikes = []
+        this.rejectedStations = []
         this.allStations = this.fetchAllStations()
     }
 
-    private async fetchAllStations() {
+    public async getStations() {
+        while (this.filteredStations.length < 1) {
+            await this.filterStations()
+        }
+        // order stations by rank
+        return this.filteredStations
+    }
+
+    public async fetchAllStations() { // set to PV
         const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', reqInit)
         return await velibRes.json() as any as StationStatus[]
     }
 
-    public async filterStations() {
+    private checkIfAvailable(station: StationStatus) {
+        switch(this.parameters.bikeType) {
+            case "dock":
+                const freeDocks = station.nbFreeDock + station.nbFreeEDock
+                if (station.overflowActivation == "yes") {
+                    const freeOverflow = station.maxBikeOverflow - (station.nbBikeOverflow + station.nbEBikeOverflow)
+                    return (freeDocks + freeOverflow) > 0
+                } else {
+                    return freeDocks > 0
+                }
+                break
+            case "bike":
+                return (station.nbBike + station.nbEbike) > 0
+                break
+            case "mBike":
+                return station.nbBike > 0
+                break
+            case "eBike":
+                return station.nbEbike > 0
+                break
+            default:
+                console.error("Invalid bike type given !")
+                return false
+        }
+    }
+
+    private async filterStations() {
         const allStations = await this.allStations
-        return allStations.filter(station => {
-            return isPointWithinRadius(station.station.gps, this.parameters.startPos, this.perimeter)
+        allStations.forEach(stationStatus => {
+            const isWithinDistance = isPointWithinRadius(stationStatus.station.gps, this.parameters.startPos, this.perimeter)
+            const isOperative = stationStatus.station.state == "Operative"
+            const hasTypeAvailable = this.checkIfAvailable(stationStatus)
+            const notAlreadyFetched = this.rejectedStations.find(rejStation => rejStation.code == stationStatus.station.code) ? false : true || this.filteredStations.find(filtStation => filtStation.code == stationStatus.station.code) ? false : true;
+            if (isWithinDistance && isOperative && hasTypeAvailable && notAlreadyFetched) {
+                const station = new Station(stationStatus, this.parameters.startPos)
+                this.filteredStations.push(station)
+            }
         })
+
+        return this.filteredStations
     }
 }
 
