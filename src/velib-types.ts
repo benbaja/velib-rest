@@ -14,7 +14,7 @@ interface BikeInfo {
     bikeBlockCause: string
     bikeElectric: "yes" | "no"
     bikeName: string
-    bikeRate: 3
+    bikeRate: number
     bikeStatus: string
     dockPosition: string
     lastRateDate: string

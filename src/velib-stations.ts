@@ -1,5 +1,5 @@
 import { FeatureCollection } from "geojson"
-import { BikeInfo, gpsCoord, StationStatus, VelibResParams } from "./velib-types"
+import { BikeInfo, gpsCoord, StationBikes, StationStatus, VelibResParams } from "./velib-types"
 import {isPointWithinRadius} from 'geolib'
 
 const reqInit: RequestInit = {
@@ -22,43 +22,65 @@ class Station {
     public name: string
     public code: string
     public pos: gpsCoord
-    public mBikes: BikeInfo[]
-    public eBikes: BikeInfo[]
+    public allBikes: BikeInfo[]
+    public filteredBikes: BikeInfo[]
     public capacity: number
-    public walkingTime: Promise<number>
-    private startPos: gpsCoord
+    public walkingTime: number | undefined
 
-    constructor(status: StationStatus, startPos: gpsCoord) {
+    constructor(status: StationStatus) {
         this.name = status.station.name
         this.code = status.station.code
         this.pos = status.station.gps
-        this.startPos = startPos
-        this.mBikes = []
-        this.eBikes = []
+        this.allBikes = []
+        this.filteredBikes = []
         this.capacity = status.nbDock + status.nbEDock
-        this.walkingTime = this.getWalkingTime()
     }
 
-    public async getWalkingTime() {
+    public async getWalkingTime(startPos: gpsCoord) {
         const searchParams = new URLSearchParams({
-            start: `${this.startPos.longitude},${this.startPos.latitude}`,
+            start: `${startPos.longitude},${startPos.latitude}`,
             end: `${this.pos.longitude},${this.pos.latitude}`
         }).toString()
         const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
         const osrData = await osrRes.json() as FeatureCollection
         const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
+        console.log(walkTime)
+        this.walkingTime = walkTime
         return walkTime
     }
 
-    public async fetchBikes() {
+    private async fetchBikes() {
         const bikeReqInit = {
             ...reqInit,
             method: "POST",
             body: JSON.stringify({disponibility: "yes", stationName: this.name})
         }
         const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
-        const bikeData = await bikeReq.json()
+        const stationData = await bikeReq.json() as StationBikes[]
+        return stationData[0].bikes
     }
+
+    public async filterBikes(bikeType: string, minRate = 1, maxLastRate = 720) {
+        this.allBikes = await this.fetchBikes()
+        this.filteredBikes = this.allBikes.filter(bike => {
+            const isAvailable = bike.bikeStatus == "disponible"
+            const lastRateHours = (Date.now() - Date.parse(bike.lastRateDate)) / 1000 / 60 / 60
+            const lastRateWithinRange = lastRateHours < maxLastRate
+            const isRateWithinRange = bike.bikeRate >= minRate
+            const isType = (bikeType === "mBike") ? bike.bikeElectric === "no" :
+               (bikeType === "eBike") ? bike.bikeElectric === "yes" : true
+            return isAvailable && lastRateWithinRange && isRateWithinRange && isType
+        })
+    }
+
+    public async fetchInfos(parameters: VelibResParams) {
+        console.log(`Fetching infos for ${this.name}`)
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await this.getWalkingTime(parameters.startPos)
+        await this.filterBikes(parameters.bikeType, parameters.minRate, parameters.maxLastRate)
+        return true
+    }
+
 }
 
 class VelibRes {
@@ -66,14 +88,12 @@ class VelibRes {
     private rejectedStations: Station[]
     private parameters: VelibResParams
     private perimeter: number
-    public allStations: Promise<StationStatus[]>
 
     constructor(params: VelibResParams) {
         this.parameters = params
         this.perimeter = 500 // in meters
         this.filteredStations = []
         this.rejectedStations = []
-        this.allStations = this.fetchAllStations()
     }
 
     public async getStations() {
@@ -84,9 +104,11 @@ class VelibRes {
         return this.filteredStations
     }
 
-    public async fetchAllStations() { // set to PV
+    private async fetchAllStations() {
         const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', reqInit)
-        return await velibRes.json() as any as StationStatus[]
+        const allStations = await velibRes.json() as any as StationStatus[]
+        console.log("fetched all stations!")
+        return allStations
     }
 
     private checkIfAvailable(station: StationStatus) {
@@ -115,21 +137,21 @@ class VelibRes {
         }
     }
 
-    private async filterStations() {
-        const allStations = await this.allStations
-        allStations.forEach(stationStatus => {
+    public async filterStations() { // set to PV in prod
+        const allStations = await this.fetchAllStations()
+        for (const stationStatus of allStations) {
             const isWithinDistance = isPointWithinRadius(stationStatus.station.gps, this.parameters.startPos, this.perimeter)
             const isOperative = stationStatus.station.state == "Operative"
             const hasTypeAvailable = this.checkIfAvailable(stationStatus)
-            const notAlreadyFetched = this.rejectedStations.find(rejStation => rejStation.code == stationStatus.station.code) ? false : true || this.filteredStations.find(filtStation => filtStation.code == stationStatus.station.code) ? false : true;
+            const notAlreadyFetched = this.rejectedStations.find(rejStation => rejStation.code == stationStatus.station.code) || this.filteredStations.find(filtStation => filtStation.code == stationStatus.station.code) ? false : true;
             if (isWithinDistance && isOperative && hasTypeAvailable && notAlreadyFetched) {
-                const station = new Station(stationStatus, this.parameters.startPos)
+                const station = new Station(stationStatus)
+                await station.fetchInfos(this.parameters)
                 this.filteredStations.push(station)
             }
-        })
-
+        }
         return this.filteredStations
     }
 }
 
-export default VelibRes
+export {Station, VelibRes}

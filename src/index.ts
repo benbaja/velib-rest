@@ -1,6 +1,6 @@
 import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
-import VelibRes from './velib-stations'
+import {VelibRes, Station} from './velib-stations'
 import tls from 'tls'
 import cron from 'node-cron'
 import path from 'path'
@@ -9,7 +9,7 @@ import {mkdir} from 'fs/promises'
 import { Readable } from 'stream'
 import {finished} from 'stream/promises'
 import { ReadableStream } from 'stream/web'
-import { StationStatus } from './velib-types';
+import { BikeInfo } from './velib-types';
 
 tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 
@@ -18,6 +18,12 @@ dotenv.config();
 
 const app: Application = express();
 const port = process.env.PORT || 8000;
+
+interface tempResults {
+    name: string
+    walkDist: number | undefined
+    bikes: BikeInfo[]
+}
 
 const fetchPBF = async () => {
     const geofabrikRes = await fetch("https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf")
@@ -45,10 +51,12 @@ app.get('/', (req: Request, res: Response) => {
         maxWalkTime: 15
     }
     const velibs = new VelibRes(params)
-    velibs.fetchAllStations().then((stations: StationStatus[]) => {
-        const status : (number | undefined)[] = []
-        stations.forEach(station => status.push(station.nbEBikeOverflow))
-        res.json(status)
+    velibs.filterStations().then((stations: Station[]) => {
+        const result: tempResults[] = []
+        stations.forEach(station => {
+            result.push({name: station.name, walkDist: station.walkingTime ,bikes: station.filteredBikes})
+        })
+        res.json(result)
     })
     
 });
