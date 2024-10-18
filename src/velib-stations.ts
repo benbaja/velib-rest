@@ -28,9 +28,9 @@ class Station {
     public operative: boolean
     public walkingTime: number | undefined
     public score: number
+    public nbDocks: number
     private nbMBikes: number
     private nbEBikes: number
-    private nbDocks: number
 
     constructor(status: StationStatus) {
         this.name = status.station.name

@@ -125,14 +125,16 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
 
     velibs.getBestStation().then((station: Station) => {
         const formattedDistance = station.walkingTime && `${Math.floor(station.walkingTime / 60)}m${Math.ceil(station.walkingTime % 60)}s`
-        res.json({
+        const resp = {
             name: station.name,
             latitude: station.pos.latitude,
             longitude: station.pos.longitude,
             walkingDistance: formattedDistance,
-            suitableBikes: station.filteredBikes.length,
-            docks: station.filteredBikes.map(bike => bike.dockPosition)
-        })
+            ...(req.query.reqType != "dock" && {suitableBikes: station.filteredBikes.length}),
+            ...(req.query.reqType == "dock" && {numberOfDocks: station.nbDocks}),
+            ...(req.query.reqType != "dock" && {docks: station.filteredBikes.map(bike => bike.dockPosition)})
+        }
+        res.json(resp)
     })
 })
 
