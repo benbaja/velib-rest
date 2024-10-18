@@ -53,7 +53,7 @@ interface VelibResParams {
     maxLastRate?: number 
     bikeType: string
     maxWalkTime?: number
-    weight?: number
+    weight: number
 }
 
 export type {StationInfo, BikeInfo, StationStatus, StationBikes, gpsCoord, VelibResParams}

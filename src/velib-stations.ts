@@ -1,6 +1,6 @@
 import { FeatureCollection } from "geojson"
 import { BikeInfo, gpsCoord, StationBikes, StationStatus, VelibResParams } from "./velib-types"
-import {isPointWithinRadius} from 'geolib'
+import {getDistance, isPointWithinRadius} from 'geolib'
 
 const reqInit: RequestInit = {
     method: "GET",
@@ -27,6 +27,7 @@ class Station {
     public capacity: number
     public operative: boolean
     public walkingTime: number | undefined
+    public score: number
     private nbMBikes: number
     private nbEBikes: number
     private nbDocks: number
@@ -35,6 +36,7 @@ class Station {
         this.name = status.station.name
         this.code = status.station.code
         this.pos = status.station.gps
+        this.score = 0
         this.allBikes = []
         this.filteredBikes = []
         this.capacity = status.nbDock + status.nbEDock
@@ -51,12 +53,15 @@ class Station {
             start: `${startPos.longitude},${startPos.latitude}`,
             end: `${this.pos.longitude},${this.pos.latitude}`
         }).toString()
-        const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
-        const osrData = await osrRes.json() as FeatureCollection
-        const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
-        console.log(walkTime)
-        this.walkingTime = walkTime
-        return walkTime
+        try {
+            const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
+            const osrData = await osrRes.json() as FeatureCollection
+            const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
+            console.log(walkTime)
+            this.walkingTime = walkTime
+        } catch (err) {
+            console.log(err)
+        }
     }
 
     private async fetchBikes() {
@@ -83,12 +88,13 @@ class Station {
         })
     }
 
-    public async fetchInfos(parameters: VelibResParams) {
+    public async fetchInfos(params: VelibResParams) {
         console.log(`Fetching infos for ${this.name}`)
+        process.env.ORS_API_URL && await this.getWalkingTime(params.startPos)
+        await this.filterBikes(params.bikeType, params.minRate, params.maxLastRate)
         await new Promise(resolve => setTimeout(resolve, 500))
-        await this.getWalkingTime(parameters.startPos)
-        await this.filterBikes(parameters.bikeType, parameters.minRate, parameters.maxLastRate)
-        return true
+        this.score = (params.bikeType == "docks" ? this.nbDocks : this.filteredBikes.length) 
+            / Math.pow( this.walkingTime || getDistance(params.startPos, this.pos), params.weight )
     }
 
     public checkIfAvailable(type: string) {
@@ -158,7 +164,7 @@ class VelibRes {
 
     public async getBestStation() {
         const filteredStations = await this.filterStations()
-
+        return filteredStations.reduce((acc: Station, station: Station) => station.score > acc.score ? station : acc)
     }
 }
 

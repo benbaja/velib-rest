@@ -94,26 +94,45 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
         return
     }
 
+    const weight = parseInt(req.query.weight as string)
+    const weightWithinRange = 0 < weight && weight < 1
+    if (req.query.weight && !weightWithinRange) {
+        res.status(400)
+        res.json({error: "Priority weight has to be a value between 0 (stations with more bikes) and 1 (closer stations)"})
+        return
+    }
+
     next()
 }
 
 app.get('/api', checkQueryParams, (req: Request, res: Response) => {
-    const weight = 1
     const params = {
         startPos: {latitude: parseFloat(req.query.startLat as string), longitude: parseFloat(req.query.startLon as string)},
-        minRate: parseInt(req.query.minRate as string),
-        maxLastRate: parseInt(req.query.maxLastRate as string),
+        minRate: parseInt(req.query.minRate as string)  || 1,
+        maxLastRate: parseInt(req.query.maxLastRate as string) || 720,
         bikeType: req.query.reqType as string,
-        maxWalkTime: parseInt(req.query.maxWalkTime as string)
+        maxWalkTime: parseInt(req.query.maxWalkTime as string) || 120,
+        weight: parseInt(req.query.weight as string) || 0.5
     }
     const velibs = new VelibRes(params)
-    velibs.filterStations().then((stations: Station[]) => {
-        const result: tempResults[] = []
-        stations.forEach(station => {
-            const score = station.filteredBikes.length / Math.pow(station.walkingTime || 1, weight)
-            result.push({name: station.name, walkDist: station.walkingTime, bikes: station.filteredBikes, score: score})
+    // velibs.filterStations().then((stations: Station[]) => {
+    //     const result: tempResults[] = []
+    //     stations.forEach(station => {
+    //         result.push({name: station.name, walkDist: station.walkingTime, bikes: station.filteredBikes, score: station.score})
+    //     })
+    //     res.json(result)
+    // })
+
+    velibs.getBestStation().then((station: Station) => {
+        const formattedDistance = station.walkingTime && `${Math.floor(station.walkingTime / 60)}m${Math.ceil(station.walkingTime % 60)}s`
+        res.json({
+            name: station.name,
+            latitude: station.pos.latitude,
+            longitude: station.pos.longitude,
+            walkingDistance: formattedDistance,
+            suitableBikes: station.filteredBikes.length,
+            docks: station.filteredBikes.map(bike => bike.dockPosition)
         })
-        res.json(result)
     })
 })
 
