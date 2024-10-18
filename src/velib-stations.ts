@@ -25,7 +25,11 @@ class Station {
     public allBikes: BikeInfo[]
     public filteredBikes: BikeInfo[]
     public capacity: number
+    public operative: boolean
     public walkingTime: number | undefined
+    private nbMBikes: number
+    private nbEBikes: number
+    private nbDocks: number
 
     constructor(status: StationStatus) {
         this.name = status.station.name
@@ -34,6 +38,12 @@ class Station {
         this.allBikes = []
         this.filteredBikes = []
         this.capacity = status.nbDock + status.nbEDock
+        this.operative = status.station.state == "Operative"
+        this.nbMBikes = status.overflowActivation == "yes" ? status.nbBikeOverflow + status.nbBike : status.nbBike
+        this.nbEBikes = status.overflowActivation == "yes" ? status.nbEBikeOverflow + status.nbEbike : status.nbEbike
+        const freeDocks = status.nbFreeDock + status.nbFreeEDock
+        this.nbDocks = status.overflowActivation == "yes" ? status.maxBikeOverflow - (status.nbBikeOverflow + status.nbEBikeOverflow) + freeDocks : freeDocks
+
     }
 
     public async getWalkingTime(startPos: gpsCoord) {
@@ -81,6 +91,25 @@ class Station {
         return true
     }
 
+    public checkIfAvailable(type: string) {
+        switch(type) {
+            case "dock":
+                return this.nbDocks > 0
+                break
+            case "bike":
+                return (this.nbMBikes + this.nbEBikes) > 0
+                break
+            case "mBike":
+                return this.nbMBikes > 0
+                break
+            case "eBike":
+                return this.nbEBikes > 0
+                break
+            default:
+                console.error("Invalid bike type given !")
+                return false
+        }
+    }
 }
 
 class VelibRes {
@@ -108,49 +137,28 @@ class VelibRes {
         const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', reqInit)
         const allStations = await velibRes.json() as any as StationStatus[]
         console.log("fetched all stations!")
-        return allStations
-    }
-
-    private checkIfAvailable(station: StationStatus) {
-        switch(this.parameters.bikeType) {
-            case "dock":
-                const freeDocks = station.nbFreeDock + station.nbFreeEDock
-                if (station.overflowActivation == "yes") {
-                    const freeOverflow = station.maxBikeOverflow - (station.nbBikeOverflow + station.nbEBikeOverflow)
-                    return (freeDocks + freeOverflow) > 0
-                } else {
-                    return freeDocks > 0
-                }
-                break
-            case "bike":
-                return (station.nbBike + station.nbEbike) > 0
-                break
-            case "mBike":
-                return station.nbBike > 0
-                break
-            case "eBike":
-                return station.nbEbike > 0
-                break
-            default:
-                console.error("Invalid bike type given !")
-                return false
-        }
+        return allStations.map((stationStatus) => new Station(stationStatus))
     }
 
     public async filterStations() { // set to PV in prod
         const allStations = await this.fetchAllStations()
-        for (const stationStatus of allStations) {
-            const isWithinDistance = isPointWithinRadius(stationStatus.station.gps, this.parameters.startPos, this.perimeter)
-            const isOperative = stationStatus.station.state == "Operative"
-            const hasTypeAvailable = this.checkIfAvailable(stationStatus)
-            const notAlreadyFetched = this.rejectedStations.find(rejStation => rejStation.code == stationStatus.station.code) || this.filteredStations.find(filtStation => filtStation.code == stationStatus.station.code) ? false : true;
-            if (isWithinDistance && isOperative && hasTypeAvailable && notAlreadyFetched) {
-                const station = new Station(stationStatus)
+        for (const station of allStations) {
+            const isWithinDistance = isPointWithinRadius(station.pos, this.parameters.startPos, this.perimeter)
+            const hasTypeAvailable = station.checkIfAvailable(this.parameters.bikeType)
+            const notAlreadyFetched = this.rejectedStations.find(rejStation => rejStation.code == station.code) || this.filteredStations.find(filtStation => filtStation.code == station.code) ? false : true;
+            if (isWithinDistance && station.operative && hasTypeAvailable && notAlreadyFetched) {
                 await station.fetchInfos(this.parameters)
                 this.filteredStations.push(station)
+            } else {
+                this.rejectedStations.push(station)
             }
         }
         return this.filteredStations
+    }
+
+    public async getBestStation() {
+        const filteredStations = await this.filterStations()
+
     }
 }
 

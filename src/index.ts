@@ -23,6 +23,7 @@ interface tempResults {
     name: string
     walkDist: number | undefined
     bikes: BikeInfo[]
+    score?: number
 }
 
 const fetchPBF = async () => {
@@ -97,6 +98,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
 }
 
 app.get('/api', checkQueryParams, (req: Request, res: Response) => {
+    const weight = 1
     const params = {
         startPos: {latitude: parseFloat(req.query.startLat as string), longitude: parseFloat(req.query.startLon as string)},
         minRate: parseInt(req.query.minRate as string),
@@ -108,7 +110,8 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
     velibs.filterStations().then((stations: Station[]) => {
         const result: tempResults[] = []
         stations.forEach(station => {
-            result.push({name: station.name, walkDist: station.walkingTime ,bikes: station.filteredBikes})
+            const score = station.filteredBikes.length / Math.pow(station.walkingTime || 1, weight)
+            result.push({name: station.name, walkDist: station.walkingTime, bikes: station.filteredBikes, score: score})
         })
         res.json(result)
     })
