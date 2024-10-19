@@ -11,7 +11,7 @@ const reqInit: RequestInit = {
         "Host": "www.velib-metropole.fr",
         "accept": "*/*",
         "content-type": "application/json",
-        "authorization": `Basic ${process.env.VELIB_API_TOKEN}`,
+//        "authorization": `Basic ${process.env.VELIB_API_TOKEN}`,
         "user-agent": "Velib/1099 CFNetwork/1496.0.7 Darwin/23.5.0",
         "accept-language": "fr-FR,fr;q=0.9",
         "Connection": "keep-alive",

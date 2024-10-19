@@ -1,6 +1,12 @@
-version: "1.0"
+version: '3.7'
 
 services:
+  ts-node-docker:
+    environment:
+      ORS_API_URL: ors-app # if ors-app hosted on another machine, input the URL
+    ports:
+      - "8000:8000"
+    command: node build/index.js
   # ----------------- ORS application configuration ------------------- #
   ors-app:
     # Activate the following lines to build the container from the repository
