@@ -19,12 +19,6 @@ dotenv.config();
 const app: Application = express();
 const port = process.env.PORT || 8000;
 
-interface tempResults {
-    name: string
-    walkDist: number | undefined
-    bikes: BikeInfo[]
-    score?: number
-}
 
 const fetchPBF = async () => {
     const geofabrikRes = await fetch("https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf")
@@ -115,13 +109,6 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
         weight: parseInt(req.query.weight as string) || 0.5
     }
     const velibs = new VelibRes(params)
-    // velibs.filterStations().then((stations: Station[]) => {
-    //     const result: tempResults[] = []
-    //     stations.forEach(station => {
-    //         result.push({name: station.name, walkDist: station.walkingTime, bikes: station.filteredBikes, score: station.score})
-    //     })
-    //     res.json(result)
-    // })
 
     velibs.getBestStation().then((station: Station) => {
         const formattedDistance = station.walkingTime && `${Math.floor(station.walkingTime / 60)}m${Math.ceil(station.walkingTime % 60)}s`
