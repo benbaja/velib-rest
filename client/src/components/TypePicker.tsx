@@ -1,6 +1,6 @@
 
 import { ActionIcon, Divider, Group } from '@mantine/core';
-import { MouseEvent, useState } from 'react';
+import { MouseEvent, useEffect, useState } from 'react';
 import { MdElectricBike, MdLocalParking, MdPedalBike } from 'react-icons/md';
 
 interface typePickerProps {
@@ -19,18 +19,27 @@ const TypePicker: React.FC<typePickerProps> = ({choiceHook}) => {
             setParkPicked(false)
             if (btnType == "mbike") {
                 !mBikePicked ? setMBikePicked(true) : eBikePicked && setMBikePicked(false)
-                mBikePicked && setChoice("mbike")
             } else if (btnType == "ebike") {
                 !eBikePicked ? setEBikePicked(true) : mBikePicked && setEBikePicked(false)
-                eBikePicked && setChoice("ebike")
             }
-            mBikePicked && eBikePicked && setChoice("bike")
+            //(mBikePicked && eBikePicked) && setChoice("bike")
         } else if (btnType == "park") {
             setMBikePicked(false)
             setEBikePicked(false)
             !parkPicked && setParkPicked(true)
         }
     }
+
+    // update choice state
+    useEffect(() => {
+        if (parkPicked) {
+            setChoice("park")
+        } else {
+            mBikePicked && setChoice("mbike")
+            eBikePicked && setChoice("ebike")
+            mBikePicked && eBikePicked && setChoice("bike")
+        }
+    }, [mBikePicked, eBikePicked, parkPicked])
 
     return (
         <>
@@ -40,6 +49,7 @@ const TypePicker: React.FC<typePickerProps> = ({choiceHook}) => {
                 <Divider orientation="vertical" />
                 <ActionIcon id="park" variant={parkPicked ? "filled" : "outline"} color="grape" radius="xl" size="xl" onClick={handleClick}><MdLocalParking size={28} /></ActionIcon>
             </Group>
+            choice: {choice}
         </>
     )
 }
