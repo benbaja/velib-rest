@@ -1,34 +1,23 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import '@mantine/core/styles.css';
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, Rating, Title } from '@mantine/core';
 import './App.css'
+import { useState } from 'react';
+import TypePicker from './components/TypePicker';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const typeChoiceHook = useState("bike")
+  const [minRate, setMinRate] = useState(3)
 
   return (
     <MantineProvider>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <Title order={1}>Velib REST</Title>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        Trouvez rapidement la meilleure station de Velib proche de vous!
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+      <TypePicker choiceHook={typeChoiceHook} />
+      <Rating defaultValue={3} size="xl" count={3} value={minRate} onChange={setMinRate} />
+      <p className="footer">
+        API Ref - GitHub
       </p>
     </MantineProvider>
   )
