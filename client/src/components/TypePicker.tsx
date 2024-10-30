@@ -42,7 +42,7 @@ const TypePicker: React.FC<typePickerProps> = ({setChoice}) => {
 
     return (
         <>
-            <Group>
+            <Group justify="center">
                 <Tooltip label="Velib mécanique">
                     <ActionIcon id="mbike" variant={mBikePicked ? "filled" : "outline"} color="teal" radius="xl" size="xl" onClick={handleClick} ><MdPedalBike size={28} /></ActionIcon>
                 </Tooltip>

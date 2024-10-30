@@ -19,13 +19,18 @@ function App() {
       <div className="card">
         Trouvez rapidement la meilleure station de Velib proche de vous!
       </div>
-      <TypePicker setChoice={setTypeChoice} />
+
+      <div className="card">
+        <TypePicker setChoice={setTypeChoice} />
+      </div>
+      
       <AdvancedOptions 
         minRateHook={[minRate, setMinRate]}
         maxLastRateHook={[maxLastRate, setMaxLastRate]}
         maxWalkTimeHook={[maxWalkTime, setMaxWalkTime]}
         decisionWeightHook={[decisionWeight, setDecisionWeight]}
       />
+
       <p className="footer">
         API Ref - GitHub
       </p>

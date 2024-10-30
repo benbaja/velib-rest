@@ -1,4 +1,4 @@
-import { Text, Stack, Tooltip } from '@mantine/core';
+import { Text, Stack, Tooltip, Box } from '@mantine/core';
 import { ReactNode } from 'react';
 
 interface optionProps {
@@ -12,15 +12,16 @@ const AdvOption: React.FC<optionProps> = ({children, title, tooltip}) => {
     return (
         <>
             <Stack
-                h={300}
                 bg="var(--mantine-color-body)"
                 align="stretch"
                 gap="xs"
             >
-                <Tooltip label={tooltip}>
+                <Tooltip label={tooltip} multiline w={150} withArrow>
                     <Text fw={700}>{title}</Text>
                 </Tooltip>
-                {children}
+                <Box mx="auto">
+                    {children}
+                </Box>
             </Stack>
         </>
     )
