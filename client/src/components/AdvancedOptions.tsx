@@ -16,7 +16,7 @@ const AdvancedOptions: React.FC<advancedOptionsProps> = ({minRateHook, maxLastRa
 
     return (
         <>
-            <Accordion defaultValue="advOptions" chevronPosition="left">
+            <Accordion chevronPosition="left">
                 <Accordion.Item key="advOptions" value="advOptions">
                 <Accordion.Control>Options avancées</Accordion.Control>
                     <Accordion.Panel>

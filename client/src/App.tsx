@@ -4,6 +4,8 @@ import './App.css'
 import { useState } from 'react';
 import TypePicker from './components/TypePicker';
 import AdvancedOptions from './components/AdvancedOptions';
+import RequestSender from './components/RequestSender';
+import Map from './components/Map';
 
 function App() {
   const [ typeChoice, setTypeChoice ] = useState("bike")
@@ -23,13 +25,19 @@ function App() {
       <div className="card">
         <TypePicker setChoice={setTypeChoice} />
       </div>
-      
+
       <AdvancedOptions 
         minRateHook={[minRate, setMinRate]}
         maxLastRateHook={[maxLastRate, setMaxLastRate]}
         maxWalkTimeHook={[maxWalkTime, setMaxWalkTime]}
         decisionWeightHook={[decisionWeight, setDecisionWeight]}
       />
+
+      <RequestSender />
+
+      <div className="card">
+        <Map />
+      </div>
 
       <p className="footer">
         API Ref - GitHub
