@@ -1,12 +1,17 @@
 import '@mantine/core/styles.css';
-import { MantineProvider, Rating, Title } from '@mantine/core';
+import { MantineProvider, Title } from '@mantine/core';
 import './App.css'
 import { useState } from 'react';
 import TypePicker from './components/TypePicker';
+import AdvancedOptions from './components/AdvancedOptions';
 
 function App() {
-  const typeChoiceHook = useState("bike")
-  const [minRate, setMinRate] = useState(3)
+  const [ typeChoice, setTypeChoice ] = useState("bike")
+  const [ minRate, setMinRate ] = useState(3)
+  const [ maxLastRate, setMaxLastRate ] = useState(24)
+  const [ maxWalkTime, setMaxWalkTime ] = useState(20)
+  const [ decisionWeight, setDecisionWeight ] = useState(0.5)
+
 
   return (
     <MantineProvider>
@@ -14,8 +19,13 @@ function App() {
       <div className="card">
         Trouvez rapidement la meilleure station de Velib proche de vous!
       </div>
-      <TypePicker choiceHook={typeChoiceHook} />
-      <Rating defaultValue={3} size="xl" count={3} value={minRate} onChange={setMinRate} />
+      <TypePicker setChoice={setTypeChoice} />
+      <AdvancedOptions 
+        minRateHook={[minRate, setMinRate]}
+        maxLastRateHook={[maxLastRate, setMaxLastRate]}
+        maxWalkTimeHook={[maxWalkTime, setMaxWalkTime]}
+        decisionWeightHook={[decisionWeight, setDecisionWeight]}
+      />
       <p className="footer">
         API Ref - GitHub
       </p>

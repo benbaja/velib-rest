@@ -1,14 +1,13 @@
 
-import { ActionIcon, Divider, Group } from '@mantine/core';
+import { ActionIcon, Divider, Group, Tooltip } from '@mantine/core';
 import { MouseEvent, useEffect, useState } from 'react';
 import { MdElectricBike, MdLocalParking, MdPedalBike } from 'react-icons/md';
 
 interface typePickerProps {
-    choiceHook: [ string, React.Dispatch<React.SetStateAction<string>> ]
+    setChoice: React.Dispatch<React.SetStateAction<string>>
 }
 
-const TypePicker: React.FC<typePickerProps> = ({choiceHook}) => {
-    const [ choice, setChoice ] = choiceHook
+const TypePicker: React.FC<typePickerProps> = ({setChoice}) => {
     const [ mBikePicked, setMBikePicked] = useState(true)
     const [ eBikePicked, setEBikePicked] = useState(true)
     const [ parkPicked, setParkPicked] = useState(false)
@@ -22,7 +21,7 @@ const TypePicker: React.FC<typePickerProps> = ({choiceHook}) => {
             } else if (btnType == "ebike") {
                 !eBikePicked ? setEBikePicked(true) : mBikePicked && setEBikePicked(false)
             }
-            //(mBikePicked && eBikePicked) && setChoice("bike")
+
         } else if (btnType == "park") {
             setMBikePicked(false)
             setEBikePicked(false)
@@ -44,12 +43,17 @@ const TypePicker: React.FC<typePickerProps> = ({choiceHook}) => {
     return (
         <>
             <Group>
-                <ActionIcon id="mbike" variant={mBikePicked ? "filled" : "outline"} color="teal" radius="xl" size="xl" onClick={handleClick} ><MdPedalBike size={28} /></ActionIcon>
-                <ActionIcon id="ebike" variant={eBikePicked ? "filled" : "outline"} color="blue" radius="xl" size="xl" onClick={handleClick}><MdElectricBike size={28} /></ActionIcon>
+                <Tooltip label="Velib mécanique">
+                    <ActionIcon id="mbike" variant={mBikePicked ? "filled" : "outline"} color="teal" radius="xl" size="xl" onClick={handleClick} ><MdPedalBike size={28} /></ActionIcon>
+                </Tooltip>
+                <Tooltip label="Velib électrique">
+                    <ActionIcon id="ebike" variant={eBikePicked ? "filled" : "outline"} color="blue" radius="xl" size="xl" onClick={handleClick}><MdElectricBike size={28} /></ActionIcon>
+                </Tooltip>
                 <Divider orientation="vertical" />
-                <ActionIcon id="park" variant={parkPicked ? "filled" : "outline"} color="grape" radius="xl" size="xl" onClick={handleClick}><MdLocalParking size={28} /></ActionIcon>
+                <Tooltip label="Dock">
+                    <ActionIcon id="park" variant={parkPicked ? "filled" : "outline"} color="grape" radius="xl" size="xl" onClick={handleClick}><MdLocalParking size={28} /></ActionIcon>
+                </Tooltip>
             </Group>
-            choice: {choice}
         </>
     )
 }
