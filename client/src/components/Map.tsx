@@ -2,9 +2,10 @@ import { AspectRatio } from '@mantine/core'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 
 interface mapProps {
+    geoLoc: undefined | {lat: number, lon: number}
 }
 
-const Map: React.FC<mapProps> = ({}) => {
+const Map: React.FC<mapProps> = ({geoLoc}) => {
 
     return (
         <>

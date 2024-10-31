@@ -1,18 +1,32 @@
 import '@mantine/core/styles.css';
 import { MantineProvider, Title } from '@mantine/core';
 import './App.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import TypePicker from './components/TypePicker';
 import AdvancedOptions from './components/AdvancedOptions';
 import RequestSender from './components/RequestSender';
+import ResultsDisplay from './components/ResultsDisplay';
 import Map from './components/Map';
 
 function App() {
+  const [ geoLoc, setGeoLoc ] = useState<undefined | {lat: number, lon: number}>(undefined)
   const [ typeChoice, setTypeChoice ] = useState("bike")
   const [ minRate, setMinRate ] = useState(3)
   const [ maxLastRate, setMaxLastRate ] = useState(24)
   const [ maxWalkTime, setMaxWalkTime ] = useState(20)
   const [ decisionWeight, setDecisionWeight ] = useState(0.5)
+  const [ error, setError ] = useState<undefined | {message: string, details: string}>(undefined)
+  const [ results, setResults ] = useState("")
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGeoLoc({lat: position.coords.latitude, lon: position.coords.longitude})
+      },
+      (error) => {
+        setError({message: "Impossible de déterminer votre géolocalisation", details: error.message})
+      })
+  }, [])
 
 
   return (
@@ -33,10 +47,26 @@ function App() {
         decisionWeightHook={[decisionWeight, setDecisionWeight]}
       />
 
-      <RequestSender />
+      <RequestSender 
+        geoLoc={geoLoc}
+        typeChoice={typeChoice}
+        minRate={minRate}
+        maxLastRate={maxLastRate}
+        maxWalkTime={maxWalkTime}
+        decisionWeight={decisionWeight}
+        setError={setError}
+        setResults={setResults}
+      />
+
+      <ResultsDisplay 
+        error={error}
+        results={results}
+      />
 
       <div className="card">
-        <Map />
+        <Map 
+          geoLoc={geoLoc}
+        />
       </div>
 
       <p className="footer">

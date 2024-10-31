@@ -17,7 +17,7 @@ tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 dotenv.config();
 
 const app: Application = express();
-const port = process.env.PORT || 8000;
+const port = 8000;
 
 
 const fetchPBF = async () => {
