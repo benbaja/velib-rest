@@ -1,7 +1,8 @@
 import '@mantine/core/styles.css';
-import { MantineProvider, Title } from '@mantine/core';
+import { AspectRatio, MantineProvider, Space, Title, Text } from '@mantine/core';
 import {ApiData} from "./APIRes"
 import './App.css'
+import { MapContainer } from 'react-leaflet'
 import { useEffect, useState } from 'react';
 import TypePicker from './components/TypePicker';
 import AdvancedOptions from './components/AdvancedOptions';
@@ -33,13 +34,13 @@ function App() {
   return (
     <MantineProvider>
       <Title order={1}>Velib REST</Title>
-      <div className="card">
-        Trouvez rapidement la meilleure station de Velib proche de vous!
-      </div>
+      <Space h="lg" />
+      
+      <Text>Trouvez rapidement la meilleure station de Velib proche de vous!</Text>
+      <Space h="lg" />
 
-      <div className="card">
-        <TypePicker setChoice={setTypeChoice} />
-      </div>
+      <TypePicker setChoice={setTypeChoice} />
+      <Space h="lg" />
 
       <AdvancedOptions 
         minRateHook={[minRate, setMinRate]}
@@ -47,6 +48,7 @@ function App() {
         maxWalkTimeHook={[maxWalkTime, setMaxWalkTime]}
         decisionWeightHook={[decisionWeight, setDecisionWeight]}
       />
+      <Space h="lg" />
 
       <RequestSender 
         geoLoc={geoLoc}
@@ -58,18 +60,24 @@ function App() {
         setError={setError}
         setResults={setResults}
       />
+      <Space h="md" />
 
       <ResultsDisplay 
         error={error}
         results={results}
+        geoLoc={geoLoc}
       />
+      <Space h="md" />
 
-      <div className="card">
-        <Map 
-          geoLoc={geoLoc}
-          results={results}
-        />
-      </div>
+      <AspectRatio ratio={16 / 9}>
+        <MapContainer center={[48.86040280350408, 2.3364582290119023]} zoom={10} minZoom={10} maxZoom={16} scrollWheelZoom={true}>
+          <Map 
+            geoLoc={geoLoc}
+            results={results}
+          />
+        </MapContainer>
+      </AspectRatio>
+      <Space h="lg" />
 
       <p className="footer">
         API Ref - GitHub
