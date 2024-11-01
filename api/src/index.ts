@@ -3,13 +3,13 @@ import dotenv from 'dotenv';
 import {VelibRes, Station} from './velib-stations'
 import tls from 'tls'
 import cron from 'node-cron'
+import cors from 'cors'
 import path from 'path'
 import fs from 'fs'
 import {mkdir} from 'fs/promises'
 import { Readable } from 'stream'
 import {finished} from 'stream/promises'
 import { ReadableStream } from 'stream/web'
-import { BikeInfo } from './velib-types';
 
 tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 
@@ -17,6 +17,7 @@ tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
 dotenv.config();
 
 const app: Application = express();
+app.use(cors())
 const port = 8000;
 
 
@@ -88,7 +89,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
         return
     }
 
-    const weight = parseInt(req.query.weight as string)
+    const weight = parseFloat(req.query.weight as string)
     const weightWithinRange = 0 < weight && weight < 1
     if (req.query.weight && !weightWithinRange) {
         res.status(400)

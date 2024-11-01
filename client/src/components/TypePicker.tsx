@@ -32,10 +32,10 @@ const TypePicker: React.FC<typePickerProps> = ({setChoice}) => {
     // update choice state
     useEffect(() => {
         if (parkPicked) {
-            setChoice("park")
+            setChoice("dock")
         } else {
-            mBikePicked && setChoice("mbike")
-            eBikePicked && setChoice("ebike")
+            mBikePicked && setChoice("mBike")
+            eBikePicked && setChoice("eBike")
             mBikePicked && eBikePicked && setChoice("bike")
         }
     }, [mBikePicked, eBikePicked, parkPicked])

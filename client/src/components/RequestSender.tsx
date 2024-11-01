@@ -1,7 +1,8 @@
 import { Button, Loader } from "@mantine/core"
 import { useState } from "react"
+import { ApiData } from "../APIRes"
 
-interface requestSendertProps {
+interface requestSenderProps {
     geoLoc: undefined | {lat: number, lon: number}
     typeChoice: string
     minRate: number
@@ -9,13 +10,15 @@ interface requestSendertProps {
     maxWalkTime: number
     decisionWeight: number
     setError: React.Dispatch<React.SetStateAction<undefined | {message: string, details: string}>>
-    setResults: React.Dispatch<React.SetStateAction<string>>
+    setResults: React.Dispatch<React.SetStateAction<ApiData | undefined>>
 }
 
-const RequestSender: React.FC<requestSendertProps> = ({geoLoc, typeChoice, minRate, maxLastRate, maxWalkTime, decisionWeight, setError, setResults}) => {
+const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRate, maxLastRate, maxWalkTime, decisionWeight, setError, setResults}) => {
     const [ loading, setLoading ] = useState(false)
     
     const fetchRes = async () => {
+        setError(undefined)
+        setResults(undefined)
         if (geoLoc) {
             const reqParams = new URLSearchParams({
                 startLat: geoLoc.lat.toString(),
@@ -32,13 +35,25 @@ const RequestSender: React.FC<requestSendertProps> = ({geoLoc, typeChoice, minRa
             try {
                 const req = await fetch('http://localhost:8000/api?' + reqParams)
                 const data = await req.json()
-                setResults(data.toString())
+                if (!req.ok) {
+                    setError({message: "Erreur de l'API", details: data.error})
+                }
+                setResults({
+                    name: data.name,
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    walkingDistance: data.walkingDistance,
+                    suitableBikes: data.suitableBikes,
+                    numberOfDocks: data.numberOfDocks,
+                    docks: data.docks 
+                })
             } catch (error) {
                 setLoading(false)
                 if (error instanceof Error) {
                     setError({message: "Impossible de commiquer avec l'API", details: error.message})
                 }
             }
+            setLoading(false)
         }
     }
 

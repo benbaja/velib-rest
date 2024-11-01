@@ -1,5 +1,6 @@
 import '@mantine/core/styles.css';
 import { MantineProvider, Title } from '@mantine/core';
+import {ApiData} from "./APIRes"
 import './App.css'
 import { useEffect, useState } from 'react';
 import TypePicker from './components/TypePicker';
@@ -16,7 +17,7 @@ function App() {
   const [ maxWalkTime, setMaxWalkTime ] = useState(20)
   const [ decisionWeight, setDecisionWeight ] = useState(0.5)
   const [ error, setError ] = useState<undefined | {message: string, details: string}>(undefined)
-  const [ results, setResults ] = useState("")
+  const [ results, setResults ] = useState<ApiData | undefined>(undefined)
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -66,6 +67,7 @@ function App() {
       <div className="card">
         <Map 
           geoLoc={geoLoc}
+          results={results}
         />
       </div>
 
