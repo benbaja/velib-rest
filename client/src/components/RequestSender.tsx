@@ -1,4 +1,4 @@
-import { Button, Loader } from "@mantine/core"
+import { Button } from "@mantine/core"
 import { useState } from "react"
 import { ApiData } from "../APIRes"
 
