@@ -72,7 +72,7 @@ class Station {
         }
         const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
         const stationData = await bikeReq.json() as StationBikes[]
-        return stationData[0].bikes
+        return stationData[0].bikes ? stationData[0].bikes : []
     }
 
     public async filterBikes(bikeType: string, minRate = 1, maxLastRate = 720) {
