@@ -59,8 +59,12 @@ const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRat
 
     return (
         <>
-            <Button onClick={fetchRes}>
-                {loading ? <Loader color="rgba(255, 255, 255, 1)" type="dots" /> : "Trouver"}
+            <Button onClick={fetchRes} 
+                loading={loading} 
+                loaderProps={{ type: 'dots', color: "rgba(255, 255, 255, 1)" }}
+                disabled={geoLoc ? false : true}
+            >
+                Trouver
             </Button>
         </>
     )
