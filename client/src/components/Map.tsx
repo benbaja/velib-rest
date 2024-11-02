@@ -1,7 +1,7 @@
 import { ApiData } from "../APIRes"
-import { TileLayer, Marker, Tooltip } from 'react-leaflet'
+import { TileLayer, Marker, Tooltip, GeoJSON } from 'react-leaflet'
 import { useMap } from 'react-leaflet/hooks'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 interface mapProps {
     geoLoc: undefined | {lat: number, lon: number}
@@ -40,6 +40,7 @@ const Map: React.FC<mapProps> = ({geoLoc, results}) => {
             />
             {geoLoc && renderMarker({position:[geoLoc.lat, geoLoc.lon], class:"origin"})}
             {results && renderMarker({position:[results.latitude, results.longitude], class:"destination"})}
+            {results && results.itinerary && <GeoJSON key={results.name} data={results.itinerary} style={{ weight: 1 }}></GeoJSON>}
         </>
     )
 }

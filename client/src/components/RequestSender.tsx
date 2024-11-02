@@ -27,8 +27,8 @@ const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRat
                 maxLastRate: maxLastRate.toString(),
                 reqType: typeChoice,
                 maxWalkTime: maxWalkTime.toString(),
-                weight: decisionWeight.toString()
-
+                weight: decisionWeight.toString(),
+                client: "true"
             }).toString()
 
             setLoading(true)
@@ -45,7 +45,8 @@ const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRat
                     walkingDistance: data.walkingDistance,
                     suitableBikes: data.suitableBikes,
                     numberOfDocks: data.numberOfDocks,
-                    docks: data.docks 
+                    docks: data.docks,
+                    itinerary: data.itinerary
                 })
             } catch (error) {
                 setLoading(false)

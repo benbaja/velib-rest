@@ -118,6 +118,7 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
             latitude: station.pos.latitude,
             longitude: station.pos.longitude,
             walkingDistance: formattedDistance,
+            ...(req.query.client && {itinerary: station.itinerary}),
             ...(req.query.reqType != "dock" && {suitableBikes: station.filteredBikes.length}),
             ...(req.query.reqType == "dock" && {numberOfDocks: station.nbDocks}),
             ...(req.query.reqType != "dock" && {docks: station.filteredBikes.map(bike => bike.dockPosition)})

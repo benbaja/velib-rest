@@ -1,4 +1,4 @@
-import { FeatureCollection } from "geojson"
+import { FeatureCollection, Feature } from "geojson"
 import { BikeInfo, gpsCoord, StationBikes, StationStatus, VelibResParams } from "./velib-types"
 import {getDistance, isPointWithinRadius} from 'geolib'
 
@@ -27,6 +27,7 @@ class Station {
     public capacity: number
     public operative: boolean
     public walkingTime: number | undefined
+    public itinerary: FeatureCollection | undefined
     public score: number
     public nbDocks: number
     private nbMBikes: number
@@ -56,6 +57,7 @@ class Station {
         try {
             const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
             const osrData = await osrRes.json() as FeatureCollection
+            this.itinerary = osrData
             const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
             console.log(walkTime)
             this.walkingTime = walkTime
