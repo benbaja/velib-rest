@@ -74,6 +74,7 @@ function App() {
           <Map 
             geoLoc={geoLoc}
             results={results}
+            typeChoice={typeChoice}
           />
         </MapContainer>
       </AspectRatio>

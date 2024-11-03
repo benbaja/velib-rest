@@ -12,7 +12,7 @@ const ResultsDisplay: React.FC<resultsDisplayProps> = ({error, results, geoLoc})
     const [formattedDocksList, setFormattedDocksList] = useState("")
 
     useEffect(() => {
-        if (results && results.docks.length > 0) {
+        if (results && results.docks && results.docks.length > 0) {
             const sortedList = [...results.docks].sort((a, b) => Number(a) - Number(b))
             setFormattedDocksList(sortedList.join(", "))
         } 
@@ -25,7 +25,6 @@ const ResultsDisplay: React.FC<resultsDisplayProps> = ({error, results, geoLoc})
                 origin: `${geoLoc.lat},${geoLoc.lon}`,
                 destination: `${results.latitude},${results.longitude}`
             }).toString()
-            console.log(reqParams)
             return "https://www.google.com/maps/dir/?api=1&" + reqParams
         } else {
             return ""

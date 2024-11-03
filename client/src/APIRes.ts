@@ -8,7 +8,7 @@ interface ApiData {
     walkingDistance?: string
     suitableBikes?: number
     numberOfDocks?: number
-    docks: string[] 
+    docks?: string[] 
 }
 
 export type {ApiData}
