@@ -15,7 +15,9 @@ const ResultsDisplay: React.FC<resultsDisplayProps> = ({error, results, geoLoc})
         if (results && results.docks && results.docks.length > 0) {
             const sortedList = [...results.docks].sort((a, b) => Number(a) - Number(b))
             setFormattedDocksList(sortedList.join(", "))
-        } 
+        } else {
+            setFormattedDocksList("")
+        }
     }, [results])
 
     const getMapsLink = () => {
