@@ -72,9 +72,14 @@ class Station {
             method: "POST",
             body: JSON.stringify({disponibility: "yes", stationName: this.name})
         }
-        const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
-        const stationData = await bikeReq.json() as StationBikes[]
-        return stationData[0].bikes ? stationData[0].bikes : []
+        try {
+            const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
+            const stationData = await bikeReq.json() as StationBikes[]
+            return stationData[0].bikes ? stationData[0].bikes : []
+        } catch(err) {
+            console.error(err)
+            return []
+        }
     }
 
     public async filterBikes(bikeType: string, minRate = 1, maxLastRate = 720) {
@@ -93,10 +98,14 @@ class Station {
     public async fetchInfos(params: VelibResParams) {
         console.log(`Fetching infos for ${this.name}`)
         process.env.ORS_API_URL && await this.getWalkingTime(params.startPos)
-        await this.filterBikes(params.bikeType, params.minRate, params.maxLastRate)
-        await new Promise(resolve => setTimeout(resolve, 500))
-        this.score = (params.bikeType == "docks" ? this.nbDocks : this.filteredBikes.length) 
-            / Math.pow( this.walkingTime || getDistance(params.startPos, this.pos), params.weight )
+        try {
+            await this.filterBikes(params.bikeType, params.minRate, params.maxLastRate)
+            await new Promise(resolve => setTimeout(resolve, 500))
+            this.score = (params.bikeType == "docks" ? this.nbDocks : this.filteredBikes.length) 
+                / Math.pow( this.walkingTime || getDistance(params.startPos, this.pos), params.weight )
+        } catch(err) {
+            console.error(err)
+        }
     }
 
     public checkIfAvailable(type: string) {
