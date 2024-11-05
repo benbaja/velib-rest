@@ -25,6 +25,7 @@ cron.schedule('0 0 * * *', () => {
 });
 
 app.get('/api', checkQueryParams, (req: Request, res: Response) => {
+    console.log(req.body)
     const params = {
         startPos: {latitude: parseFloat(req.query.startLat as string), longitude: parseFloat(req.query.startLon as string)},
         minRate: parseInt(req.query.minRate as string)  || 1,
