@@ -9,8 +9,8 @@ import { ReadableStream } from 'stream/web'
 const fetchPBF = async () => {
     const geofabrikRes = await fetch("https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf")
     if (geofabrikRes.body) {
-        if (!fs.existsSync("./osmfiles")) await mkdir("./osmfiles")
-        const tempDest = path.resolve("./osmfiles", "ile-de-france-latest.osm.pbf.temp")
+        if (!fs.existsSync("../osmfiles")) await mkdir("../osmfiles")
+        const tempDest = path.resolve("../osmfiles", "ile-de-france-latest.osm.pbf.temp")
         const dest = tempDest.slice(0, -5)
         const fileStream = fs.createWriteStream(tempDest, { flags: 'wx' })
         await finished(Readable.fromWeb(geofabrikRes.body as ReadableStream<any>).pipe(fileStream))
