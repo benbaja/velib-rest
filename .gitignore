@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 osmfiles
+client/tsconfig.app.tsbuildinfo
+client/tsconfig.node.tsbuildinfo
