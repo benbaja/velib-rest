@@ -9,6 +9,13 @@ interface ApiData {
     suitableBikes?: number
     numberOfDocks?: number
     docks?: string[] 
+    otherStations: {
+        name: string
+        latitude: number
+        longitude: number
+        suitableBikes?: number
+        numberOfDocks?: number
+    }[]
 }
 
 export type {ApiData}

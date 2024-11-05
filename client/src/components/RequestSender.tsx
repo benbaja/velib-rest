@@ -46,7 +46,8 @@ const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRat
                     suitableBikes: data.suitableBikes,
                     numberOfDocks: data.numberOfDocks,
                     docks: data.docks,
-                    itinerary: data.itinerary
+                    itinerary: data.itinerary,
+                    otherStations: data.otherStations
                 })
             } catch (error) {
                 setLoading(false)

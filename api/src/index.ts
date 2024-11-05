@@ -66,7 +66,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
         return
     }
     const minRate = parseInt(req.query.minRate as string)
-    const minRateWithinRange = 0 < minRate && minRate < 4
+    const minRateWithinRange = 0 < minRate && minRate <= 3
     if (req.query.minRate && !minRateWithinRange) {
         res.status(400)
         res.json({error: "Minimum bike rate out of range (1 to 3 stars)"})
@@ -74,7 +74,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const maxLastRate = parseInt(req.query.maxLastRate as string)
-    const maxLastRateWithinRange = 0 < maxLastRate && maxLastRate < 720
+    const maxLastRateWithinRange = 0 < maxLastRate && maxLastRate <= 720
     if (req.query.maxLastRate && !maxLastRateWithinRange) {
         res.status(400)
         res.json({error: "Maximum last bike rating out of range (1 to 720 hours)"})
@@ -82,7 +82,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const maxWalkTime = parseInt(req.query.maxWalkTime as string)
-    const maxWalkTimeWithinRange = 0 < maxWalkTime && maxWalkTime < 120
+    const maxWalkTimeWithinRange = 0 < maxWalkTime && maxWalkTime <= 120
     if (req.query.maxWalkTime && !maxWalkTimeWithinRange) {
         res.status(400)
         res.json({error: "Maximum station walking time out of range (1 to 120 minutes)"})
@@ -90,7 +90,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const weight = parseFloat(req.query.weight as string)
-    const weightWithinRange = 0 < weight && weight < 1
+    const weightWithinRange = 0 <= weight && weight <= 1
     if (req.query.weight && !weightWithinRange) {
         res.status(400)
         res.json({error: "Priority weight has to be a value between 0 (stations with more bikes) and 1 (closer stations)"})
@@ -113,12 +113,13 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
 
     velibs.getBestStation().then((bestStation: Station) => {
         const formattedDistance = bestStation.walkingTime && `${Math.floor(bestStation.walkingTime / 60)}m${Math.ceil(bestStation.walkingTime % 60)}s`
-        const otherStations = velibs.filteredStations.map((otherStation) => {
-            return bestStation.name != otherStation.name && {
+        const otherStations = velibs.filteredStations.filter(otherStation => otherStation.name != bestStation.name).map((otherStation) => {
+            return {
                 name: otherStation.name,
-                position: otherStation.pos,
-                suitableBikes: otherStation.filteredBikes.length,
-                numberOfDocks: otherStation.nbDocks
+                latitude: otherStation.pos.latitude,
+                longitude: otherStation.pos.longitude,
+                ...(req.query.reqType != "dock" && {suitableBikes: otherStation.filteredBikes.length}),
+                ...(req.query.reqType == "dock" && {numberOfDocks: otherStation.nbDocks})
             }
         })
 

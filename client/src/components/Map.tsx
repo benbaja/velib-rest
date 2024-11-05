@@ -45,16 +45,18 @@ const Map: React.FC<mapProps> = ({geoLoc, results, typeChoice}) => {
     const renderMarker = (params: markerParams) => {
         const icon = divIcon({
             className: 'custom-div-icon',
-            html: `<div style='background-color:${params.color};' class='marker-pin'></div><i>${params.iconHtml || params.number}</i>`,
+            html: `<div style='background-color:${params.color};' class='marker-pin'></div><b>${params.iconHtml || params.number}</b>`,
             iconSize: [30, 42],
             iconAnchor: [15, 42],
             popupAnchor: [0, -40]
         })
-        return (
-            <Marker position={params.position} icon={icon}>
-                <Popup>{params.name}</Popup>
-            </Marker>
-        )
+        if (params.position[0] && params.position[0]) {
+            return (
+                <Marker key={`${params.name}-marker`} position={params.position} icon={icon}>
+                    <Popup key={`${params.name}-popup`}>{params.name}</Popup>
+                </Marker>
+            )
+        }
     }
 
     return (
@@ -63,9 +65,16 @@ const Map: React.FC<mapProps> = ({geoLoc, results, typeChoice}) => {
               attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             />
-            {geoLoc && renderMarker({position: [geoLoc.lat, geoLoc.lon], name: "Départ", color: "", iconHtml: origIcon})}
-            {results && renderMarker({position:[results.latitude, results.longitude], name: results.name, color: "", iconHtml: destIcon})}
-            {results && results.itinerary && <GeoJSON key={results.name} data={results.itinerary} style={{ weight: 1 }}></GeoJSON>}
+            {geoLoc && renderMarker({position: [geoLoc.lat, geoLoc.lon], name: "Départ", color: "#2BDD66", iconHtml: origIcon})}
+            {results && renderMarker({position:[results?.latitude, results?.longitude], name: results?.name, color: "#C91A25", iconHtml: destIcon})}
+            {results && results?.itinerary && <GeoJSON key={results?.name} data={results?.itinerary} style={{ weight: 1 }}></GeoJSON>}
+
+            {results && results?.otherStations?.map((station) => renderMarker({
+                position: [station.latitude, station.longitude], 
+                name: station.name, 
+                color:"#09B8FF", 
+                iconHtml: station.suitableBikes?.toString() || station.numberOfDocks?.toString() || ""})
+            )}
         </>
     )
 }
