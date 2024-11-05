@@ -156,9 +156,15 @@ class VelibRes {
 
     private async fetchAllStations() {
         console.log("fetching all stations")
-        const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', reqInit)
-        const allStations = await velibRes.json() as any as StationStatus[]
-        return allStations.map((stationStatus) => new Station(stationStatus))
+        try {
+            const velibRes = await fetch('https://www.velib-metropole.fr/api/map/details?gpsTopLatitude=49.05546&gpsTopLongitude=2.662193&gpsBotLatitude=48.572554&gpsBotLongitude=1.898879&zoomLevel=1', reqInit)
+            console.log(velibRes.body)
+            const allStations = await velibRes.json() as any as StationStatus[]
+            return allStations.map((stationStatus) => new Station(stationStatus))
+        } catch(err) {
+            console.log(err)
+            return []
+        }
     }
 
     private async filterStations() { 
