@@ -44,7 +44,7 @@ interface StationStatus {
 }
 
 interface StationBikes extends StationStatus {
-    bikes: BikeInfo[]
+    bikes?: BikeInfo[]
 }
 
 interface VelibResParams {

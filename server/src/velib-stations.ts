@@ -1,4 +1,4 @@
-import { FeatureCollection } from "geojson"
+import { FeatureCollection, Feature } from "geojson"
 import { BikeInfo, gpsCoord, StationBikes, StationStatus, VelibResParams } from "./velib-types"
 import {getDistance, isPointWithinRadius} from 'geolib'
 
@@ -27,6 +27,7 @@ class Station {
     public capacity: number
     public operative: boolean
     public walkingTime: number | undefined
+    public itinerary: FeatureCollection | undefined
     public score: number
     public nbDocks: number
     private nbMBikes: number
@@ -56,6 +57,7 @@ class Station {
         try {
             const osrRes = await fetch (`${process.env.ORS_API_URL}/ors/v2/directions/foot-walking?` + searchParams)
             const osrData = await osrRes.json() as FeatureCollection
+            this.itinerary = osrData
             const walkTime = osrData.features.reduce((acc, feature) => acc + feature.properties?.summary.duration, 0)
             console.log(walkTime)
             this.walkingTime = walkTime
@@ -72,7 +74,7 @@ class Station {
         }
         const bikeReq = await fetch("https://www.velib-metropole.fr/api/secured/searchStation", bikeReqInit)
         const stationData = await bikeReq.json() as StationBikes[]
-        return stationData[0].bikes
+        return stationData[0].bikes ? stationData[0].bikes : []
     }
 
     public async filterBikes(bikeType: string, minRate = 1, maxLastRate = 720) {
@@ -119,20 +121,23 @@ class Station {
 }
 
 class VelibRes {
-    private filteredStations: Station[]
+    private allStations: Promise<Station[]>
+    public filteredStations: Station[]
     private rejectedStations: Station[]
     private parameters: VelibResParams
     private perimeter: number
 
     constructor(params: VelibResParams) {
         this.parameters = params
-        this.perimeter = 500 // in meters
+        this.perimeter = 400 // in meters
+        this.allStations = this.fetchAllStations()
         this.filteredStations = []
         this.rejectedStations = []
     }
 
-    public async getStations() {
+    private async getStations() {
         while (this.filteredStations.length < 1) {
+            this.perimeter += 100
             await this.filterStations()
         }
         // order stations by rank
@@ -146,8 +151,8 @@ class VelibRes {
         return allStations.map((stationStatus) => new Station(stationStatus))
     }
 
-    public async filterStations() { // set to PV in prod
-        const allStations = await this.fetchAllStations()
+    private async filterStations() { 
+        const allStations = await this.allStations
         for (const station of allStations) {
             const isWithinDistance = isPointWithinRadius(station.pos, this.parameters.startPos, this.perimeter)
             const hasTypeAvailable = station.checkIfAvailable(this.parameters.bikeType)
@@ -163,7 +168,7 @@ class VelibRes {
     }
 
     public async getBestStation() {
-        const filteredStations = await this.filterStations()
+        const filteredStations = await this.getStations()
         return filteredStations.reduce((acc: Station, station: Station) => station.score > acc.score ? station : acc)
     }
 }

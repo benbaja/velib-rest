@@ -1,0 +1,32 @@
+parameters :
+- gps coords
+- bike type / park
+- min rate
+- max last rate
+- max dist
+
+process :
+create object from parameters
+while 0 suitableBikes.length :
+  fetch stations + order by gps dist
+  filter stations - operative status
+  filter stations - not already fetched 
+  filter stations - available bikes/park
+  for each station :
+    get station walking distance
+    if : station dist < max dist
+      get station bikes
+      filter station bikes w/ parameters in suitableBikes
+    else 
+      ignore
+      reachedMaxDistFlag = true
+
+top bike : 
+best rating
+last rate < max
+closest to starting point
+with most bikes in parameters available (if +/- 2min walk distance)
+
+top park : 
+closest to starting point
+with most spots available (consider overflow)

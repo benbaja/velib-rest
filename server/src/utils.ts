@@ -1,24 +1,10 @@
-import express, { Express, Request, Response , Application, NextFunction } from 'express';
-import dotenv from 'dotenv';
-import {VelibRes, Station} from './velib-stations'
-import tls from 'tls'
-import cron from 'node-cron'
+import { Request, Response, NextFunction } from 'express';
 import path from 'path'
 import fs from 'fs'
 import {mkdir} from 'fs/promises'
 import { Readable } from 'stream'
 import {finished} from 'stream/promises'
 import { ReadableStream } from 'stream/web'
-import { BikeInfo } from './velib-types';
-
-tls.DEFAULT_MIN_VERSION = 'TLSv1.3'
-
-//For env File 
-dotenv.config();
-
-const app: Application = express();
-const port = process.env.PORT || 8000;
-
 
 const fetchPBF = async () => {
     const geofabrikRes = await fetch("https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf")
@@ -32,14 +18,6 @@ const fetchPBF = async () => {
         fs.renameSync(tempDest, dest)
     }
 }
-
-cron.schedule('0 0 * * *', () => {
-    fetchPBF();
-});
-
-app.get('/', (req: Request, res: Response) => {
-    res.json("")
-});
 
 const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     if (!(req.query.startLat && req.query.startLon)) {
@@ -65,7 +43,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
         return
     }
     const minRate = parseInt(req.query.minRate as string)
-    const minRateWithinRange = 0 < minRate && minRate < 4
+    const minRateWithinRange = 0 < minRate && minRate <= 3
     if (req.query.minRate && !minRateWithinRange) {
         res.status(400)
         res.json({error: "Minimum bike rate out of range (1 to 3 stars)"})
@@ -73,7 +51,7 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const maxLastRate = parseInt(req.query.maxLastRate as string)
-    const maxLastRateWithinRange = 0 < maxLastRate && maxLastRate < 720
+    const maxLastRateWithinRange = 0 < maxLastRate && maxLastRate <= 720
     if (req.query.maxLastRate && !maxLastRateWithinRange) {
         res.status(400)
         res.json({error: "Maximum last bike rating out of range (1 to 720 hours)"})
@@ -81,15 +59,15 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const maxWalkTime = parseInt(req.query.maxWalkTime as string)
-    const maxWalkTimeWithinRange = 0 < maxWalkTime && maxWalkTime < 120
+    const maxWalkTimeWithinRange = 0 < maxWalkTime && maxWalkTime <= 120
     if (req.query.maxWalkTime && !maxWalkTimeWithinRange) {
         res.status(400)
         res.json({error: "Maximum station walking time out of range (1 to 120 minutes)"})
         return
     }
 
-    const weight = parseInt(req.query.weight as string)
-    const weightWithinRange = 0 < weight && weight < 1
+    const weight = parseFloat(req.query.weight as string)
+    const weightWithinRange = 0 <= weight && weight <= 1
     if (req.query.weight && !weightWithinRange) {
         res.status(400)
         res.json({error: "Priority weight has to be a value between 0 (stations with more bikes) and 1 (closer stations)"})
@@ -99,32 +77,4 @@ const checkQueryParams = (req: Request, res: Response, next: NextFunction) => {
     next()
 }
 
-app.get('/api', checkQueryParams, (req: Request, res: Response) => {
-    const params = {
-        startPos: {latitude: parseFloat(req.query.startLat as string), longitude: parseFloat(req.query.startLon as string)},
-        minRate: parseInt(req.query.minRate as string)  || 1,
-        maxLastRate: parseInt(req.query.maxLastRate as string) || 720,
-        bikeType: req.query.reqType as string,
-        maxWalkTime: parseInt(req.query.maxWalkTime as string) || 120,
-        weight: parseInt(req.query.weight as string) || 0.5
-    }
-    const velibs = new VelibRes(params)
-
-    velibs.getBestStation().then((station: Station) => {
-        const formattedDistance = station.walkingTime && `${Math.floor(station.walkingTime / 60)}m${Math.ceil(station.walkingTime % 60)}s`
-        const resp = {
-            name: station.name,
-            latitude: station.pos.latitude,
-            longitude: station.pos.longitude,
-            walkingDistance: formattedDistance,
-            ...(req.query.reqType != "dock" && {suitableBikes: station.filteredBikes.length}),
-            ...(req.query.reqType == "dock" && {numberOfDocks: station.nbDocks}),
-            ...(req.query.reqType != "dock" && {docks: station.filteredBikes.map(bike => bike.dockPosition)})
-        }
-        res.json(resp)
-    })
-})
-
-app.listen(port, () => {
-    console.log(`Server is Fire at http://localhost:${port}`);
-});
+export {fetchPBF, checkQueryParams}
