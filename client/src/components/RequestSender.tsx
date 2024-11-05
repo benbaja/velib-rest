@@ -32,8 +32,9 @@ const RequestSender: React.FC<requestSenderProps> = ({geoLoc, typeChoice, minRat
             }).toString()
 
             setLoading(true)
+            const apiUrl = `${import.meta.env.DEV ? "http://localhost:8000" : ""}/api?`
             try {
-                const req = await fetch('http://localhost:8000/api?' + reqParams)
+                const req = await fetch(apiUrl + reqParams)
                 const data = await req.json()
                 if (!req.ok) {
                     setError({message: "Erreur de l'API", details: data.error})
