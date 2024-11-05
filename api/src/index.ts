@@ -111,17 +111,27 @@ app.get('/api', checkQueryParams, (req: Request, res: Response) => {
     }
     const velibs = new VelibRes(params)
 
-    velibs.getBestStation().then((station: Station) => {
-        const formattedDistance = station.walkingTime && `${Math.floor(station.walkingTime / 60)}m${Math.ceil(station.walkingTime % 60)}s`
+    velibs.getBestStation().then((bestStation: Station) => {
+        const formattedDistance = bestStation.walkingTime && `${Math.floor(bestStation.walkingTime / 60)}m${Math.ceil(bestStation.walkingTime % 60)}s`
+        const otherStations = velibs.filteredStations.map((otherStation) => {
+            return bestStation.name != otherStation.name && {
+                name: otherStation.name,
+                position: otherStation.pos,
+                suitableBikes: otherStation.filteredBikes.length,
+                numberOfDocks: otherStation.nbDocks
+            }
+        })
+
         const resp = {
-            name: station.name,
-            latitude: station.pos.latitude,
-            longitude: station.pos.longitude,
+            name: bestStation.name,
+            latitude: bestStation.pos.latitude,
+            longitude: bestStation.pos.longitude,
             walkingDistance: formattedDistance,
-            ...(req.query.client && {itinerary: station.itinerary}),
-            ...(req.query.reqType != "dock" && {suitableBikes: station.filteredBikes.length}),
-            ...(req.query.reqType == "dock" && {numberOfDocks: station.nbDocks}),
-            ...(req.query.reqType != "dock" && {docks: station.filteredBikes.map(bike => bike.dockPosition)})
+            ...(req.query.client && {itinerary: bestStation.itinerary}),
+            ...(req.query.reqType != "dock" && {suitableBikes: bestStation.filteredBikes.length}),
+            ...(req.query.reqType == "dock" && {numberOfDocks: bestStation.nbDocks}),
+            ...(req.query.reqType != "dock" && {docks: bestStation.filteredBikes.map(bike => bike.dockPosition)}),
+            ...(req.query.client && {otherStations: otherStations}),
         }
         res.json(resp)
     })

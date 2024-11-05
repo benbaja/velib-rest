@@ -121,20 +121,23 @@ class Station {
 }
 
 class VelibRes {
-    private filteredStations: Station[]
+    private allStations: Promise<Station[]>
+    public filteredStations: Station[]
     private rejectedStations: Station[]
     private parameters: VelibResParams
     private perimeter: number
 
     constructor(params: VelibResParams) {
         this.parameters = params
-        this.perimeter = 500 // in meters
+        this.perimeter = 400 // in meters
+        this.allStations = this.fetchAllStations()
         this.filteredStations = []
         this.rejectedStations = []
     }
 
-    public async getStations() {
+    private async getStations() {
         while (this.filteredStations.length < 1) {
+            this.perimeter += 100
             await this.filterStations()
         }
         // order stations by rank
@@ -148,8 +151,8 @@ class VelibRes {
         return allStations.map((stationStatus) => new Station(stationStatus))
     }
 
-    public async filterStations() { // set to PV in prod
-        const allStations = await this.fetchAllStations()
+    private async filterStations() { 
+        const allStations = await this.allStations
         for (const station of allStations) {
             const isWithinDistance = isPointWithinRadius(station.pos, this.parameters.startPos, this.perimeter)
             const hasTypeAvailable = station.checkIfAvailable(this.parameters.bikeType)
@@ -165,7 +168,7 @@ class VelibRes {
     }
 
     public async getBestStation() {
-        const filteredStations = await this.filterStations()
+        const filteredStations = await this.getStations()
         return filteredStations.reduce((acc: Station, station: Station) => station.score > acc.score ? station : acc)
     }
 }
