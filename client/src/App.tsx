@@ -81,7 +81,7 @@ function App() {
       <Space h="lg" />
 
       <p className="footer">
-        API Ref - GitHub
+        API Ref - <a href="https://github.com/benbaja/velib-rest">GitHub</a>
       </p>
     </MantineProvider>
   )
