@@ -18,7 +18,7 @@ app.use(cors())
 
 app.use(express.static(path.resolve(__dirname, '../../client/dist')));
 
-const port = 8000;
+const port = process.env.PORT || 8000;
 
 cron.schedule('0 0 * * *', () => {
     fetchPBF();
